@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rover Crater Detection</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.9));
+      background-size: cover;
+      background-position: center;
+      color: white;
+    }
+
+    .container {
+      padding: 50px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 48px;
+    }
+
+    h2 {
+      font-size: 36px;
+      margin-top: 30px;
+    }
+
+    #twitch-embed {
+      margin-top: 30px;
+      border-radius: 15px;
+    }
+
+    #images-container {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .image-item {
+      margin: 10px;
+      text-align: center;
+    }
+
+    .image-item img {
+      width: 1000px;
+      height: auto;
+      border-radius: 15px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Rover Crater Detection</h1>
+    <h2>Live Stream</h2>
+    <div id="twitch-embed"></div>
+    <h2>Important Images Taken by AI</h2>
+    <div id="images-container"></div>
+  </div>
+
+  <!-- Load the Twitch embed script -->
+  <script src="https://player.twitch.tv/js/embed/v1.js"></script>
+
+  <script type="text/javascript">
+    new Twitch.Player("twitch-embed", {
+      channel: "abhay_kashyap",
+      width: "100%", // Set the width to 100% of the parent container
+      height: "600", // Set a specific height (in pixels) for the player
+      autoplay: false, // Enable or disable autoplay
+      muted: false, // Enable or disable muted playback // Specify the parent domain(s) that are allowed to embed this Twitch player
+      allowfullscreen: true // Enable or disable fullscreen mode
+    });
+  </script>
+  <!-- Firebase JavaScript SDK -->
+  <script src="https://www.gstatic.com/firebasejs/7.14.6/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.14.6/firebase-database.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/7.21.0/firebase-storage.js"></script>
+
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBDVDfTYx9_M5XWGPcCttRToGrIX9sAkXI",
+      authDomain: "pragyanrover-a1c17.firebaseapp.com",
+      projectId: "pragyanrover-a1c17",
+      storageBucket: "pragyanrover-a1c17.appspot.com",
+      messagingSenderId: "420377741422",
+      appId: "1:420377741422:web:6be67b3a89469381ffbe7f",
+      databaseURL: "",
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
+
+    // Reference to the Firebase storage bucket
+    const storageRef = storage.ref();
+
+    // Function to display images from Firebase Storage
+    // Function to display images from Firebase Storage
+    function displayImages() {
+      storageRef.child('images').listAll().then(function (result) {
+        result.items.forEach(function (imageRef) {
+          // Check if image name matches the format "frame_n.png"
+          if (imageRef.name.startsWith('frame_') && imageRef.name.endsWith('.png')) {
+            // Get image download URL
+            imageRef.getDownloadURL().then(function (url) {
+              // Create image element
+              const img = document.createElement('img');
+              img.src = url;
+
+              // Create div to hold image and metadata
+              const div = document.createElement('div');
+              div.className = 'image-item';
+
+              // Create p tags for image name, date, and time
+              const nameP = document.createElement('p');
+              const dateP = document.createElement('p');
+              const timeP = document.createElement('p');
+
+              // Extract image name from imageRef
+              const imageName = imageRef.name;
+
+              // Get metadata and extract date and time
+              imageRef.getMetadata().then(function (metadata) {
+                const dateTime = new Date(metadata.timeCreated);
+                const date = dateTime.toLocaleDateString();
+                const time = dateTime.toLocaleTimeString();
+
+                // Set text content for name, date, and time paragraphs
+                nameP.textContent = `Image Name: ${imageName}`;
+                dateP.textContent = `Date: ${date}`;
+                timeP.textContent = `Time: ${time}`;
+              });
+
+              // Append image and metadata paragraphs to div
+              div.appendChild(img);
+              div.appendChild(nameP);
+              div.appendChild(dateP);
+              div.appendChild(timeP);
+
+              // Append div to images container
+              document.getElementById('images-container').appendChild(div);
+            });
+          }
+        });
+      }).catch(function (error) {
+        console.log(error);
+      });
+    }
+    // Call displayImages function to display images
+    displayImages();
+  </script>
+</body>
+
+</html>
