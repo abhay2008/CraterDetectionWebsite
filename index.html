@@ -23,34 +23,63 @@
 
     h1 {
       font-size: 48px;
+      color: #f6faa7;
     }
 
     h2 {
       font-size: 36px;
       margin-top: 30px;
+      color: #9288fc;
     }
 
-    #twitch-embed {
-      margin-top: 30px;
-      border-radius: 15px;
-    }
-
-    #images-container {
-      margin-top: 30px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .image-item {
+    .image-item,
+    .video-item {
       margin: 10px;
       text-align: center;
+      border-radius: 15px;
+      padding: 20px;
+      background: linear-gradient(45deg, rgba(255, 0, 0, 0.4), rgba(0, 255, 0, 0.4));
+      position: relative;
     }
 
-    .image-item img {
-      width: 1000px;
+    .image-item img,
+    .video-item video {
+      width: 100%;
       height: auto;
       border-radius: 15px;
+    }
+
+    .metadata {
+      color: white;
+      padding: 10px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-weight: bold;
+      font-family: Arial, sans-serif;
+      background-color: rgba(0, 0, 0, 0.6);
+      border-top-left-radius: 15px;
+      border-top-right-radius: 15px;
+    }
+
+    @media (max-width: 768px) {
+
+      .image-item,
+      .video-item {
+        padding: 5px;
+      }
+
+      .metadata {
+        font-size: 14px;
+        padding: 1px;
+      }
+
+      .image-item img,
+      .video-item video {
+        margin-top: 40px;
+      }
     }
   </style>
 </head>
@@ -58,25 +87,20 @@
 <body>
   <div class="container">
     <h1>Rover Crater Detection</h1>
-    <h2>Live Stream</h2>
-    <div id="twitch-embed"></div>
-    <h2>Important Images Taken by AI</h2>
+    <!-- <div id="twitch-embed"></div> -->
+    <h2>Videos</h2>
+    <div id="videos-container"></div>
+    <h2>Analysed Images</h2>
     <div id="images-container"></div>
   </div>
 
   <!-- Load the Twitch embed script -->
   <script src="https://player.twitch.tv/js/embed/v1.js"></script>
 
-  <script type="text/javascript">
-    new Twitch.Player("twitch-embed", {
-      channel: "abhay_kashyap",
-      width: "100%", // Set the width to 100% of the parent container
-      height: "600", // Set a specific height (in pixels) for the player
-      autoplay: false, // Enable or disable autoplay
-      muted: false, // Enable or disable muted playback // Specify the parent domain(s) that are allowed to embed this Twitch player
-      allowfullscreen: true // Enable or disable fullscreen mode
-    });
-  </script>
+  <!-- Plyr.js -->
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.6.7/plyr.css">
+  <script src="https://cdn.plyr.io/3.6.7/plyr.polyfilled.js"></script>
+
   <!-- Firebase JavaScript SDK -->
   <script src="https://www.gstatic.com/firebasejs/7.14.6/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/7.14.6/firebase-database.js"></script>
@@ -90,8 +114,7 @@
       projectId: "pragyanrover-a1c17",
       storageBucket: "pragyanrover-a1c17.appspot.com",
       messagingSenderId: "420377741422",
-      appId: "1:420377741422:web:6be67b3a89469381ffbe7f",
-      databaseURL: "",
+      appId: "1:420377741422:web:6be67b3a89469381ffbe7f"
     };
 
     // Initialize Firebase
@@ -101,7 +124,15 @@
     // Reference to the Firebase storage bucket
     const storageRef = storage.ref();
 
-    // Function to display images from Firebase Storage
+    // Function to generate a random color in RGBA format
+    function randomRGBA() {
+      const r = Math.floor(Math.random() * 256);
+      const g = Math.floor(Math.random() * 256);
+      const b = Math.floor(Math.random() * 256);
+      const alpha = Math.random() * (0.7 - 0.3) + 0.3; // Random alpha between 0.3 and 0.7
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
     // Function to display images from Firebase Storage
     function displayImages() {
       storageRef.child('images').listAll().then(function (result) {
@@ -122,6 +153,8 @@
               const nameP = document.createElement('p');
               const dateP = document.createElement('p');
               const timeP = document.createElement('p');
+              const metadataDiv = document.createElement('div');
+              metadataDiv.className = 'metadata';
 
               // Extract image name from imageRef
               const imageName = imageRef.name;
@@ -136,13 +169,19 @@
                 nameP.textContent = `Image Name: ${imageName}`;
                 dateP.textContent = `Date: ${date}`;
                 timeP.textContent = `Time: ${time}`;
+
+                // Append name, date, and time paragraphs to metadata div
+                metadataDiv.appendChild(nameP);
+                metadataDiv.appendChild(dateP);
+                metadataDiv.appendChild(timeP);
               });
 
-              // Append image and metadata paragraphs to div
+              // Set random background color
+              div.style.background = `linear-gradient(45deg, ${randomRGBA()}, ${randomRGBA()})`;
+
+              // Append image and metadata to div
+              div.appendChild(metadataDiv);
               div.appendChild(img);
-              div.appendChild(nameP);
-              div.appendChild(dateP);
-              div.appendChild(timeP);
 
               // Append div to images container
               document.getElementById('images-container').appendChild(div);
@@ -153,8 +192,74 @@
         console.log(error);
       });
     }
+
+    // Function to display videos from Firebase Storage
+    // Function to display videos from Firebase Storage
+    function displayVideos() {
+      storageRef.child('videos').listAll().then(function (result) {
+        result.items.forEach(function (videoRef) {
+          // Check if video name matches the format "video_n.mp4"
+          if (videoRef.name.startsWith('Video_') && videoRef.name.endsWith('.mp4')) {
+            // Get video download URL
+            videoRef.getDownloadURL().then(function (url) {
+              // Create video element
+              const video = document.createElement('video');
+              video.src = url;
+              video.controls = true;
+
+              // Create div to hold video and metadata
+              const div = document.createElement('div');
+              div.className = 'video-item';
+
+              // Create p tags for video name, date, and time
+              const nameP = document.createElement('p');
+              const dateP = document.createElement('p');
+              const timeP = document.createElement('p');
+              const metadataDiv = document.createElement('div');
+              metadataDiv.className = 'metadata';
+
+              // Extract video name from videoRef
+              const videoName = videoRef.name;
+
+              // Get metadata and extract date and time
+              videoRef.getMetadata().then(function (metadata) {
+                const dateTime = new Date(metadata.timeCreated);
+                const date = dateTime.toLocaleDateString();
+                const time = dateTime.toLocaleTimeString();
+
+                // Set text content for name, date, and time paragraphs
+                nameP.textContent = `Video Name: ${videoName}`;
+                dateP.textContent = `Date: ${date}`;
+                timeP.textContent = `Time: ${time}`;
+
+                // Append name, date, and time paragraphs to metadata div
+                metadataDiv.appendChild(nameP);
+                metadataDiv.appendChild(dateP);
+                metadataDiv.appendChild(timeP);
+              });
+
+              // Set random background color
+              div.style.background = `linear-gradient(45deg, ${randomRGBA()}, ${randomRGBA()})`;
+
+              // Append video and metadata to div
+              div.appendChild(metadataDiv);
+              div.appendChild(video);
+
+              // Append div to videos container
+              document.getElementById('videos-container').appendChild(div);
+            });
+          }
+        });
+      }).catch(function (error) {
+        console.log(error);
+      });
+    }
+
     // Call displayImages function to display images
     displayImages();
+
+    // Call displayVideos function to display videos
+    displayVideos();
   </script>
 </body>
 
